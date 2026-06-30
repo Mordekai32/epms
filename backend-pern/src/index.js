@@ -7,18 +7,33 @@ require('./config/db');
 
 const app = express();
 
-// Middleware FIRST
+// Middleware
 app.use(cors());
 app.use(express.json());
 
-// Routes AFTER
+// Auth middleware
+const { verifyToken } = require('./middleware/auth');
+
+// Routes
 const authRoutes = require('./routes/auth');
 const departmentRoutes = require('./routes/departments');
 const employeeRoutes = require('./routes/employees');
-app.use('/employees', employeeRoutes);
-
+const kpiRoutes = require('./routes/kpis');
+const goalRoutes = require('./routes/goals');
+const reviewRoutes = require('./routes/reviews');
+const profileRoutes = require('./routes/profile');
+const reportRoutes = require('./routes/reports');
+app.use('/reports-data', verifyToken, reportRoutes);
+app.use('/profile', profileRoutes);
+// Public routes
 app.use('/auth', authRoutes);
-app.use('/departments', departmentRoutes);
+
+// Protected routes
+app.use('/departments', verifyToken, departmentRoutes);
+app.use('/employees', verifyToken, employeeRoutes);
+app.use('/kpis', verifyToken, kpiRoutes);
+app.use('/goals', verifyToken, goalRoutes);
+app.use('/reviews', verifyToken, reviewRoutes);
 
 // Test route
 app.get('/', (req, res) => {
