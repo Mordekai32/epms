@@ -123,10 +123,10 @@ export default function DepartmentsPage() {
                   <td className="px-4 py-3">
                     <div className="flex gap-2">
                       <button onClick={() => handleEditOpen(row)} className="flex items-center gap-1 bg-orange-400 hover:bg-orange-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition">
-                        ✏️ Edit
+                         Edit
                       </button>
                       <button onClick={() => handleDelete(row.department_code)} className="flex items-center gap-1 bg-red-500 hover:bg-red-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition">
-                        🗑️ Delete
+                         Delete
                       </button>
                     </div>
                   </td>

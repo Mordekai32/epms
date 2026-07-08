@@ -1,22 +1,26 @@
 import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
+import NotificationBell from "./NotificationBell.jsx";
 
 export default function AppLayout() {
   const { logout, user } = useAuth();
 
   const allLinks = [
-    { to: "/dashboard", label: "🏠 Dashboard", roles: ["admin", "manager", "employee"] },
-    { to: "/", label: "Employees", roles: ["admin", "manager"] },
-    { to: "/departments", label: "Departments", roles: ["admin"] },
-    { to: "/kpis", label: "KPIs", roles: ["admin", "manager"] },
-    { to: "/goals", label: "Goals", roles: ["admin", "manager"] },
-    { to: "/reviews", label: "Performance Reviews", roles: ["admin", "manager"] },
-    { to: "/my-performance", label: "My Performance", roles: ["employee"] },
-     
-    { to: "/reports", label: "Reports", roles: ["admin", "manager"] },
-    { to: "/profile", label: "👤My Profile", roles: ["admin", "manager", "employee"] },
-  ];
-
+  { to: "/dashboard", label: "🏠 Dashboard", roles: ["admin", "manager", "deputy_manager", "employee"] },
+ 
+  { to: "/", label: "Employees", roles: ["admin", "manager", "deputy_manager"] },
+  { to: "/departments", label: "Departments", roles: ["admin"] },
+  { to: "/kpis", label: "KPIs", roles: ["admin", "manager", "deputy_manager"] },
+  { to: "/goals", label: "Goals", roles: ["admin", "manager", "deputy_manager"] },
+  { to: "/cycles", label: " Appraisal Cycles", roles: ["admin"] },
+  { to: "/reviews", label: "Performance Reviews", roles: ["admin", "manager", "deputy_manager"] },
+  { to: "/approvals", label: " Approvals", roles: ["admin", "manager"] },
+  { to: "/my-performance", label: "My Performance", roles: ["employee"] },
+  { to: "/complaints", label: " Complaints", roles: ["admin", "manager", "deputy_manager"] },
+  { to: "/reports", label: "Reports", roles: ["admin", "manager"] },
+   { to: "/users", label: "User Management", roles: ["admin"] },
+  { to: "/profile", label: " My Profile", roles: ["admin", "manager", "deputy_manager", "employee"] },
+];
   const links = allLinks.filter(link => link.roles.includes(user?.role));
 
   return (
@@ -51,8 +55,13 @@ export default function AppLayout() {
           </button>
         </div>
       </aside>
-      <main className="p-6 md:p-10">
-        <Outlet />
+      <main className="min-h-screen">
+        <div className="flex items-center justify-end border-b border-line bg-surface px-6 py-3 md:px-10">
+          <NotificationBell />
+        </div>
+        <div className="p-6 md:p-10">
+          <Outlet />
+        </div>
       </main>
     </div>
   );

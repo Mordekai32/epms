@@ -36,20 +36,21 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ message: 'Invalid username or password.' });
     }
     const token = jwt.sign(
-      { id: user.id, role: user.role, employeeNumber: user.employee_number },
-      process.env.JWT_SECRET,
-      { expiresIn: '7d' }
-    );
-    res.json({
-      token,
-      user: {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        role: user.role,
-        employeeNumber: user.employee_number
-      }
-    });
+  { id: user.id, role: user.role, employeeNumber: user.employee_number, departmentCode: user.department_code },
+  process.env.JWT_SECRET,
+  { expiresIn: '7d' }
+);
+res.json({
+  token,
+  user: {
+    id: user.id,
+    username: user.username,
+    email: user.email,
+    role: user.role,
+    employeeNumber: user.employee_number,
+    departmentCode: user.department_code
+  }
+});
   } catch (err) {
     res.status(500).json({ message: 'Server error.' });
   }

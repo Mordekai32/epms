@@ -23,6 +23,13 @@ const goalRoutes = require('./routes/goals');
 const reviewRoutes = require('./routes/reviews');
 const profileRoutes = require('./routes/profile');
 const reportRoutes = require('./routes/reports');
+const complaintRoutes = require('./routes/complaints');
+const { router: notificationRoutes } = require('./routes/notifications');
+const appraisalCycleRoutes = require('./routes/appraisalCycles');
+
+const userRoutes = require('./routes/users');
+app.use('/users', verifyToken, userRoutes);
+app.use('/complaints', complaintRoutes);
 app.use('/reports-data', verifyToken, reportRoutes);
 app.use('/profile', profileRoutes);
 // Public routes
@@ -34,7 +41,8 @@ app.use('/employees', verifyToken, employeeRoutes);
 app.use('/kpis', verifyToken, kpiRoutes);
 app.use('/goals', verifyToken, goalRoutes);
 app.use('/reviews', verifyToken, reviewRoutes);
-
+app.use('/notifications', verifyToken, notificationRoutes);
+app.use('/cycles', verifyToken, appraisalCycleRoutes);
 // Test route
 app.get('/', (req, res) => {
   res.json({ message: 'EIC PMS Backend is running! 🚀' });

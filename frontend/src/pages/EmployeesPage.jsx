@@ -22,17 +22,19 @@ export default function EmployeesPage() {
   const [form, setForm] = useState(emptyForm);
   const [departments, setDepartments] = useState([]);
   const [rows, setRows] = useState([]);
-  const [fieldErrors, setFieldErrors] = useState({});
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editForm, setEditForm] = useState(emptyForm);
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetEmployee, setResetEmployee] = useState(null);
+  const [resetPassword, setResetPassword] = useState("");
+  const [search, setSearch] = useState("");
+  const [filterDept, setFilterDept] = useState("");
   const { user } = useAuth();
-const [showResetModal, setShowResetModal] = useState(false);
-const [resetEmployee, setResetEmployee] = useState(null);
-const [resetPassword, setResetPassword] = useState("");
+
   const loadEmployees = async () => {
     try {
       const { data } = await api.get("/employees");
@@ -56,7 +58,6 @@ const [resetPassword, setResetPassword] = useState("");
 
   const setField = (key, value) => {
     setForm((prev) => ({ ...prev, [key]: value }));
-    setFieldErrors((prev) => ({ ...prev, [key]: "" }));
   };
 
   const submit = async (e) => {
@@ -69,7 +70,7 @@ const [resetPassword, setResetPassword] = useState("");
     try {
       const res = await api.post("/employees", form);
       if (res.data.loginCreated) {
-        setMessage(`Employee added successfully. Login created — Username: ${form.employeeNumber.toLowerCase()}`);
+        setMessage(`Employee added. Login created — Username: ${form.employeeNumber.toLowerCase()}`);
       } else {
         setMessage("Employee added successfully.");
       }
@@ -79,30 +80,15 @@ const [resetPassword, setResetPassword] = useState("");
       setError(err.response?.data?.message || "Failed to save.");
     } finally { setLoading(false); }
   };
-const handleResetOpen = (emp) => {
-  setResetEmployee(emp);
-  setResetPassword("");
-  setShowResetModal(true);
-};
 
-const handleResetSubmit = async (e) => {
-  e.preventDefault();
-  try {
-    const res = await api.put(`/employees/${resetEmployee.employee_number}/reset-password`, { newPassword: resetPassword });
-    setMessage(res.data.message);
-    setShowResetModal(false);
-  } catch (err) {
-    setError(err.response?.data?.message || "Failed to reset password.");
-  }
-};
   const handleDelete = async (employeeNumber) => {
-    if (!window.confirm(`Are you sure you want to Deactivate employee ${employeeNumber}?`)) return;
+    if (!window.confirm(`Deactivate employee ${employeeNumber}?`)) return;
     try {
       await api.delete(`/employees/${employeeNumber}`);
       setMessage("Employee deactivated successfully.");
       loadEmployees();
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to delete.");
+      setError(err.response?.data?.message || "Failed.");
     }
   };
 
@@ -132,6 +118,32 @@ const handleResetSubmit = async (e) => {
       setError(err.response?.data?.message || "Failed to update.");
     }
   };
+
+  const handleResetOpen = (emp) => {
+    setResetEmployee(emp);
+    setResetPassword("");
+    setShowResetModal(true);
+  };
+
+  const handleResetSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await api.put(`/employees/${resetEmployee.employee_number}/reset-password`, { newPassword: resetPassword });
+      setMessage(res.data.message);
+      setShowResetModal(false);
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to reset password.");
+    }
+  };
+
+  const filteredRows = rows.filter(row => {
+    const matchSearch = !search ||
+      `${row.first_name} ${row.last_name}`.toLowerCase().includes(search.toLowerCase()) ||
+      row.employee_number?.toLowerCase().includes(search.toLowerCase()) ||
+      row.position?.toLowerCase().includes(search.toLowerCase());
+    const matchDept = !filterDept || row.department_code === filterDept;
+    return matchSearch && matchDept;
+  });
 
   const inputClass = "mt-1 w-full rounded-lg border border-line px-3 py-2";
 
@@ -229,6 +241,34 @@ const handleResetSubmit = async (e) => {
         </div>
       </form>
 
+      {/* Search & Filter */}
+      <div className="flex gap-3 items-center flex-wrap">
+        <input
+          className="rounded-lg border border-line px-3 py-2 text-sm w-64"
+          placeholder="Search by name, number, position..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <select
+          className="rounded-lg border border-line px-3 py-2 text-sm"
+          value={filterDept}
+          onChange={(e) => setFilterDept(e.target.value)}
+        >
+          <option value="">All Departments</option>
+          {departments.map(d => (
+            <option key={d.department_code} value={d.department_code}>
+              {d.department_code} — {d.department_name}
+            </option>
+          ))}
+        </select>
+        {(search || filterDept) && (
+          <button onClick={() => { setSearch(""); setFilterDept(""); }} className="text-xs text-red-500 hover:underline">
+            Clear
+          </button>
+        )}
+        <span className="text-xs text-muted">{filteredRows.length} of {rows.length} employees</span>
+      </div>
+
       {/* Table */}
       <div className="bg-card rounded-xl border border-line overflow-x-auto">
         <table className="w-full text-sm">
@@ -244,7 +284,11 @@ const handleResetSubmit = async (e) => {
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => (
+            {filteredRows.length === 0 ? (
+              <tr>
+                <td colSpan="7" className="px-4 py-8 text-center text-muted">No employees found.</td>
+              </tr>
+            ) : filteredRows.map((row) => (
               <tr key={row.employee_number} className="border-t border-line">
                 <td className="px-4 py-3">{row.employee_number}</td>
                 <td className="px-4 py-3">{row.first_name} {row.last_name}</td>
@@ -253,8 +297,8 @@ const handleResetSubmit = async (e) => {
                 <td className="px-4 py-3">{row.department_code}</td>
                 <td className="px-4 py-3">{String(row.hired_date ?? "").slice(0, 10)}</td>
                 <td className="px-4 py-3">
-                  <div className="flex gap-2">
-                    {(user?.role === 'admin' || user?.role === 'manager') && (
+                  <div className="flex gap-2 flex-wrap">
+                    {(user?.role === 'admin' || user?.role === 'manager' || user?.role === 'deputy_manager') && (
                       <button onClick={() => handleEditOpen(row)} className="flex items-center gap-1 bg-orange-400 hover:bg-orange-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition">
                         ✏️ Edit
                       </button>
@@ -265,10 +309,10 @@ const handleResetSubmit = async (e) => {
                       </button>
                     )}
                     {user?.role === 'admin' && (
-  <button onClick={() => handleResetOpen(row)} className="flex items-center gap-1 bg-blue-500 hover:bg-blue-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition">
-    🔑 Reset
-  </button>
-)}
+                      <button onClick={() => handleResetOpen(row)} className="flex items-center gap-1 bg-blue-500 hover:bg-blue-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition">
+                        🔑 Reset
+                      </button>
+                    )}
                   </div>
                 </td>
               </tr>
@@ -326,32 +370,33 @@ const handleResetSubmit = async (e) => {
             </form>
           </div>
         </div>
-        
       )}
+
+      {/* Reset Modal */}
       {showResetModal && (
-  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-    <div className="bg-white rounded-2xl p-8 w-full max-w-md shadow-2xl space-y-4">
-      <h3 className="text-lg font-bold text-ink">Reset Password — {resetEmployee.employee_number}</h3>
-      <form onSubmit={handleResetSubmit} className="space-y-4">
-        <label className="block text-sm">
-          <span className="font-medium">New Password</span>
-          <input
-            type="text"
-            className={inputClass}
-            value={resetPassword}
-            onChange={(e) => setResetPassword(e.target.value)}
-            placeholder="e.g. newpass123"
-            required
-          />
-        </label>
-        <div className="flex gap-3">
-          <button type="submit" className="rounded-lg bg-accent text-accent-text px-5 py-2 font-semibold">Reset Password</button>
-          <button type="button" onClick={() => setShowResetModal(false)} className="rounded-lg border border-line px-5 py-2 font-semibold">Cancel</button>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-8 w-full max-w-md shadow-2xl space-y-4">
+            <h3 className="text-lg font-bold text-ink">Reset Password — {resetEmployee.employee_number}</h3>
+            <form onSubmit={handleResetSubmit} className="space-y-4">
+              <label className="block text-sm">
+                <span className="font-medium">New Password</span>
+                <input
+                  type="text"
+                  className={inputClass}
+                  value={resetPassword}
+                  onChange={(e) => setResetPassword(e.target.value)}
+                  placeholder="e.g. newpass123"
+                  required
+                />
+              </label>
+              <div className="flex gap-3">
+                <button type="submit" className="rounded-lg bg-accent text-accent-text px-5 py-2 font-semibold">Reset Password</button>
+                <button type="button" onClick={() => setShowResetModal(false)} className="rounded-lg border border-line px-5 py-2 font-semibold">Cancel</button>
+              </div>
+            </form>
+          </div>
         </div>
-      </form>
-    </div>
-  </div>
-)}
+      )}
     </div>
   );
 }

@@ -1,44 +1,59 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../config/db');
-const { requireRole } = require('../middleware/auth');
+
 const bcrypt = require('bcryptjs');
 // GET — all roles can view active employees
+const { requireRole, scopeToOwnDepartment } = require('../middleware/auth');
+
+// GET — everyone sees something appropriate to their role
 router.get('/', async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM employees WHERE is_active = true ORDER BY created_at DESC');
+    let result;
+    if (req.user.role === 'admin') {
+      result = await pool.query('SELECT * FROM employees WHERE is_active = true ORDER BY created_at DESC');
+    } else if (['manager', 'deputy_manager'].includes(req.user.role)) {
+      if (!req.user.departmentCode) return res.json([]);
+      result = await pool.query(
+        'SELECT * FROM employees WHERE is_active = true AND department_code = $1 ORDER BY created_at DESC',
+        [req.user.departmentCode]
+      );
+    } else {
+      result = await pool.query('SELECT * FROM employees WHERE is_active = true ORDER BY created_at DESC');
+    }
     res.json(result.rows);
   } catch (err) {
     res.status(500).json({ message: 'Server error.' });
   }
 });
 
-/// POST — admin and manager only, also creates login account
-router.post('/', requireRole('admin', 'manager'), async (req, res) => {
+router.post('/', requireRole('admin', 'manager', 'deputy_manager'), async (req, res) => {
   const { employeeNumber, firstName, lastName, address, position, telephone, gender, hiredDate, departmentCode, createLogin, loginPassword } = req.body;
-  
+
+  // Manager/deputy can only add to their own department
+  if (['manager', 'deputy_manager'].includes(req.user.role) && departmentCode !== req.user.departmentCode) {
+    return res.status(403).json({ message: 'You can only add employees to your own department.' });
+  }
+
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    
     const empResult = await client.query(
       `INSERT INTO employees (employee_number, first_name, last_name, address, position, telephone, gender, hired_date, department_code) 
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
       [employeeNumber, firstName, lastName, address, position, telephone, gender, hiredDate, departmentCode]
     );
-
     let loginCreated = false;
     if (createLogin && loginPassword) {
       const username = employeeNumber.toLowerCase();
       const email = `${username}@eic.com`;
       const hashedPassword = await bcrypt.hash(loginPassword, 10);
       await client.query(
-        'INSERT INTO users (username, email, password, role, employee_number) VALUES ($1, $2, $3, $4, $5)',
-        [username, email, hashedPassword, 'employee', employeeNumber]
+        'INSERT INTO users (username, email, password, role, employee_number, department_code) VALUES ($1, $2, $3, $4, $5, $6)',
+        [username, email, hashedPassword, 'employee', employeeNumber, departmentCode]
       );
       loginCreated = true;
     }
-
     await client.query('COMMIT');
     res.status(201).json({ employee: empResult.rows[0], loginCreated });
   } catch (err) {

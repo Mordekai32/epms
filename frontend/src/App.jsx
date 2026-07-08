@@ -5,14 +5,17 @@ import LoginPage from "./pages/LoginPage.jsx";
 import ForgotPassword from "./pages/ForgotPassword.jsx";
 import EmployeesPage from "./pages/EmployeesPage.jsx";
 import DepartmentsPage from "./pages/DepartmentsPage.jsx";
-import SalariesPage from "./pages/SalariesPage.jsx";
 import ReportsPage from "./pages/ReportsPage.jsx";
 import KPIsPage from "./pages/KPIsPage.jsx";
 import GoalsPage from "./pages/GoalsPage.jsx";
 import PerformanceReviewsPage from "./pages/PerformanceReviewsPage.jsx";
 import DashboardPage from "./pages/DashboardPage.jsx";
 import MyPerformancePage from "./pages/MyPerformancePage.jsx";
+import ComplaintsPage from "./pages/ComplaintsPage.jsx";
 import ProfilePage from "./pages/ProfilePage.jsx";
+import ApprovalsPage from "./pages/ApprovalsPage.jsx";
+import UserManagementPage from "./pages/UserManagementPage.jsx";
+import AppraisalCyclesPage from "./pages/AppraisalCyclesPage.jsx";
 function PrivateRoute({ children }) {
   const { isAuthenticated, loading } = useAuth();
   if (loading) return null;
@@ -34,25 +37,36 @@ export default function App() {
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/" element={<PrivateRoute><AppLayout /></PrivateRoute>}>
         <Route index element={
-          <RoleRoute allowedRoles={["admin", "manager"]}><EmployeesPage /></RoleRoute>
+          <RoleRoute allowedRoles={["admin", "manager", "deputy_manager"]}><EmployeesPage /></RoleRoute>
         } />
         <Route path="departments" element={
           <RoleRoute allowedRoles={["admin"]}><DepartmentsPage /></RoleRoute>
         } />
+        <Route path="users" element={
+  <RoleRoute allowedRoles={["admin"]}><UserManagementPage /></RoleRoute>
+} />
         <Route path="kpis" element={
-          <RoleRoute allowedRoles={["admin", "manager"]}><KPIsPage /></RoleRoute>
+          <RoleRoute allowedRoles={["admin", "manager", "deputy_manager"]}><KPIsPage /></RoleRoute>
         } />
         <Route path="goals" element={
-          <RoleRoute allowedRoles={["admin", "manager"]}><GoalsPage /></RoleRoute>
+          <RoleRoute allowedRoles={["admin", "manager", "deputy_manager"]}><GoalsPage /></RoleRoute>
         } />
         <Route path="reviews" element={
-          <RoleRoute allowedRoles={["admin", "manager"]}><PerformanceReviewsPage /></RoleRoute>
+          <RoleRoute allowedRoles={["admin", "manager", "deputy_manager"]}><PerformanceReviewsPage /></RoleRoute>
+        } />
+        <Route path="approvals" element={
+          <RoleRoute allowedRoles={["admin", "manager"]}><ApprovalsPage /></RoleRoute>
         } />
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="my-performance" element={
           <RoleRoute allowedRoles={["employee"]}><MyPerformancePage /></RoleRoute>
         } />
-        <Route path="salaries" element={<SalariesPage />} />
+        <Route path="cycles" element={
+  <RoleRoute allowedRoles={["admin"]}><AppraisalCyclesPage /></RoleRoute>
+} />
+        <Route path="complaints" element={
+  <RoleRoute allowedRoles={["admin", "manager", "deputy_manager"]}><ComplaintsPage /></RoleRoute>
+} />
         <Route path="reports" element={
           <RoleRoute allowedRoles={["admin", "manager"]}><ReportsPage /></RoleRoute>
         } />

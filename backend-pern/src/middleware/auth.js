@@ -26,4 +26,22 @@ const requireRole = (...roles) => {
   };
 };
 
-module.exports = { verifyToken, requireRole };
+// Restrict manager/deputy_manager to only their own department's data.
+// Admin bypasses this check entirely.
+const scopeToOwnDepartment = (req, res, next) => {
+  if (req.user.role === 'admin') return next();
+
+  if (['manager', 'deputy_manager'].includes(req.user.role)) {
+    if (!req.user.departmentCode) {
+      return res.status(403).json({ message: 'No department assigned to your account.' });
+    }
+    // Attach to request so route handlers can filter queries by it
+    req.scopedDepartment = req.user.departmentCode;
+    return next();
+  }
+
+  // Employees never reach department-scoped routes — block by default
+  return res.status(403).json({ message: 'Access denied.' });
+};
+
+module.exports = { verifyToken, requireRole, scopeToOwnDepartment };
